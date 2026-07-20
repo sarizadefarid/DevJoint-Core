@@ -1,40 +1,72 @@
 package com.example.week1.service;
 
+import com.example.week1.Category;
 import com.example.week1.Product;
+import com.example.week1.dto.product.ProductRequest;
+import com.example.week1.dto.product.ProductResponse;
 import com.example.week1.repository.ProductRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
 import java.util.List;
 
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 @Service
-@RequiredArgsConstructor
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final CategoryService categoryService;
 
-    public Product createProduct(Product product) {
-        return productRepository.save(product);
+    public ProductService(ProductRepository productRepository, CategoryService categoryService) {
+        this.productRepository = productRepository;
+        this.categoryService = categoryService;
     }
 
-    public List<Product> getAllProducts() {
-        return productRepository.findAll();
+    public ProductResponse create(ProductRequest request) {
+        Product product = new Product();
+        applyRequest(product, request);
+        return toResponse(productRepository.save(product));
     }
 
-    public Product getProductById(Long id) {
-        return productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
+    public Page<ProductResponse> findAll(Pageable pageable) {
+        return productRepository.findAll(pageable)
+                .map(this::toResponse);
     }
 
-    public Product updateProduct(Long id, Product updatedProduct) {
-        Product existingProduct = getProductById(id);
-        existingProduct.setName(updatedProduct.getName());
-        existingProduct.setPrice(updatedProduct.getPrice());
-        existingProduct.setCategory(updatedProduct.getCategory());
-        return productRepository.save(existingProduct);
+    public ProductResponse findById(Long id) {
+        return toResponse(getEntity(id));
     }
 
-    public void deleteProduct(Long id) {
-        Product product = getProductById(id);
+    public ProductResponse update(Long id, ProductRequest request) {
+        Product product = getEntity(id);
+        applyRequest(product, request);
+        return toResponse(productRepository.save(product));
+    }
+
+    public void delete(Long id) {
+        Product product = getEntity(id);
         productRepository.delete(product);
+    }
+
+    private Product getEntity(Long id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Product not found"));
+    }
+
+    private void applyRequest(Product product, ProductRequest request) {
+        Category category = categoryService.getCategoryById(request.getCategoryId());
+        product.setName(request.getName());
+        product.setPrice(request.getPrice().doubleValue());
+        product.setCategory(category);
+    }
+
+    private ProductResponse toResponse(Product product) {
+        Category category = product.getCategory();
+        Long categoryId = category != null ? category.getId() : null;
+        String categoryName = category != null ? category.getName() : null;
+        return new ProductResponse(product.getId(), product.getName(), product.getPrice(), categoryId, categoryName);
     }
 }
