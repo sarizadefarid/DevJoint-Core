@@ -1,4 +1,16 @@
 package com.example.week1.dto.product;
 
-public record ProductResponse(Long id, String name, Double price, Long categoryId, String categoryName) {
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data // <-- bura @Getter @Setter avtomatik yaradır
+@AllArgsConstructor
+@NoArgsConstructor
+public class ProductResponse {
+    private Long id;
+    private String name;
+    private Double price;
+    private Long categoryId;
+    private String categoryName;
 }
