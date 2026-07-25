@@ -1,9 +1,9 @@
 package com.example.week1.service;
 
-import com.example.week1.Category;
-import com.example.week1.Product;
 import com.example.week1.dto.product.ProductRequest;
 import com.example.week1.dto.product.ProductResponse;
+import com.example.week1.entity.Category;
+import com.example.week1.entity.Product;
 import com.example.week1.repository.ProductRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -57,7 +57,8 @@ public class ProductService {
     }
 
     private void applyRequest(Product product, ProductRequest request) {
-        Category category = categoryService.getCategoryById(request.getCategoryId());
+        // getCategoryById ƏVƏZİNƏ getEntity istifadə edin:
+        Category category = categoryService.getEntity(request.getCategoryId());
         product.setName(request.getName());
         product.setPrice(request.getPrice().doubleValue());
         product.setCategory(category);

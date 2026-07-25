@@ -2,6 +2,8 @@ package com.example.week1;
 
 import com.example.week1.dto.product.ProductRequest;
 import com.example.week1.dto.product.ProductResponse;
+import com.example.week1.entity.Category;
+import com.example.week1.entity.Product;
 import com.example.week1.repository.ProductRepository;
 import com.example.week1.service.ProductService;
 import com.example.week1.service.CategoryService;
@@ -60,7 +62,8 @@ class ProductServiceTest {
     void create_shouldSaveAndReturnProduct() {
         ProductRequest request = buildRequest("Laptop", 1500.0, 1L);
 
-        when(categoryService.getCategoryById(1L)).thenReturn(category);
+        // getCategoryById ƏVƏZİNƏ getEntity mock-lanır:
+        when(categoryService.getEntity(1L)).thenReturn(category);
         when(productRepository.save(any(Product.class))).thenReturn(product);
 
         ProductResponse response = productService.create(request);
@@ -108,7 +111,8 @@ class ProductServiceTest {
         ProductRequest request = buildRequest("Laptop Pro", 1800.0, 1L);
 
         when(productRepository.findById(1L)).thenReturn(Optional.of(product));
-        when(categoryService.getCategoryById(1L)).thenReturn(category);
+        // getCategoryById ƏVƏZİNƏ getEntity mock-lanır:
+        when(categoryService.getEntity(1L)).thenReturn(category);
         when(productRepository.save(any(Product.class))).thenReturn(product);
 
         ProductResponse response = productService.update(1L, request);

@@ -1,40 +1,62 @@
 package com.example.week1.service;
 
-import com.example.week1.Category;
+import com.example.week1.dto.category.CategoryRequest;
+import com.example.week1.dto.category.CategoryResponse;
+import com.example.week1.entity.Category;
 import com.example.week1.repository.CategoryRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import java.util.List;
+import org.springframework.web.server.ResponseStatusException;
+
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
-@RequiredArgsConstructor
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
 
-    public Category createCategory(Category category) {
-        return categoryRepository.save(category);
+    public CategoryService(CategoryRepository categoryRepository) {
+        this.categoryRepository = categoryRepository;
     }
 
-    public Page<Category> getAllCategories(Pageable pageable) {
-        return categoryRepository.findAll(pageable);
+    public CategoryResponse create(CategoryRequest request) {
+        Category category = new Category();
+        applyRequest(category, request);
+        return toResponse(categoryRepository.save(category));
     }
 
-    public Category getCategoryById(Long id) {
-        return categoryRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Category not found with id: " + id));
+    public Page<CategoryResponse> findAll(Pageable pageable) {
+        return categoryRepository.findAll(pageable)
+                .map(this::toResponse);
     }
 
-    public Category updateCategory(Long id, Category updatedCategory) {
-        Category existingCategory = getCategoryById(id);
-        existingCategory.setName(updatedCategory.getName());
-        return categoryRepository.save(existingCategory);
+    public CategoryResponse findById(Long id) {
+        return toResponse(getEntity(id));
     }
 
-    public void deleteCategory(Long id) {
-        Category category = getCategoryById(id);
+    public CategoryResponse update(Long id, CategoryRequest request) {
+        Category category = getEntity(id);
+        applyRequest(category, request);
+        return toResponse(categoryRepository.save(category));
+    }
+
+    public void delete(Long id) {
+        Category category = getEntity(id);
         categoryRepository.delete(category);
+    }
+
+    // ProductService-də getEntity necə yazılıbsa eynisi (404 xətası üçün):
+    public Category getEntity(Long id) {
+        return categoryRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Category not found"));
+    }
+
+private void applyRequest(Category category, CategoryRequest request) {
+    category.setName(request.getName()); 
+}
+
+    private CategoryResponse toResponse(Category category) {
+        return new CategoryResponse(category.getId(), category.getName());
     }
 }
