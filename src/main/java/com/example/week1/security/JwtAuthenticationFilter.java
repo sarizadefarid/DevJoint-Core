@@ -31,6 +31,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
+        final String jwt = authHeader.substring(7);
+
+        try {
+            // Token-in vaxtı keçibse avtomatik 401 Unauthorized qaytarır
+            if (jwtService.isTokenExpired(jwt)) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"JWT token has expired.\"}");
+                return;
+            }
+        } catch (Exception e) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"Invalid JWT token.\"}");
+            return;
+        }
+
         filterChain.doFilter(request, response);
     }
 }
