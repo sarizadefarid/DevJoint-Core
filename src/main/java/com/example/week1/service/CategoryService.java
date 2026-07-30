@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
@@ -21,6 +22,9 @@ public class CategoryService {
     }
 
     public CategoryResponse create(CategoryRequest request) {
+        if (categoryRepository.existsByName(request.getName())) {
+            throw new ResponseStatusException(CONFLICT, "Category with name '" + request.getName() + "' already exists");
+        }
         Category category = new Category();
         applyRequest(category, request);
         return toResponse(categoryRepository.save(category));
@@ -37,6 +41,11 @@ public class CategoryService {
 
     public CategoryResponse update(Long id, CategoryRequest request) {
         Category category = getEntity(id);
+
+        if (categoryRepository.existsByNameAndIdNot(request.getName(), id)) {
+            throw new ResponseStatusException(CONFLICT, "Category with name '" + request.getName() + "' already exists");
+        }
+
         applyRequest(category, request);
         return toResponse(categoryRepository.save(category));
     }
@@ -46,15 +55,14 @@ public class CategoryService {
         categoryRepository.delete(category);
     }
 
-    // ProductService-də getEntity necə yazılıbsa eynisi (404 xətası üçün):
     public Category getEntity(Long id) {
         return categoryRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Category not found"));
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Category not found with id: " + id));
     }
 
-private void applyRequest(Category category, CategoryRequest request) {
-    category.setName(request.getName()); 
-}
+    private void applyRequest(Category category, CategoryRequest request) {
+        category.setName(request.getName());
+    }
 
     private CategoryResponse toResponse(Category category) {
         return new CategoryResponse(category.getId(), category.getName());
