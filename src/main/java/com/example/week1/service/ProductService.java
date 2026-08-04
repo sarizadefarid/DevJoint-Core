@@ -4,70 +4,80 @@ import com.example.week1.dto.product.ProductRequest;
 import com.example.week1.dto.product.ProductResponse;
 import com.example.week1.entity.Category;
 import com.example.week1.entity.Product;
+import com.example.week1.repository.CategoryRepository;
 import com.example.week1.repository.ProductRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
-
-import static org.springframework.http.HttpStatus.NOT_FOUND;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ProductService {
 
     private final ProductRepository productRepository;
-    private final CategoryService categoryService;
+    private final CategoryRepository categoryRepository;
 
-    public ProductService(ProductRepository productRepository, CategoryService categoryService) {
+    public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository) {
         this.productRepository = productRepository;
-        this.categoryService = categoryService;
-    }
-
-    public ProductResponse create(ProductRequest request) {
-        Product product = new Product();
-        applyRequest(product, request);
-        return toResponse(productRepository.save(product));
+        this.categoryRepository = categoryRepository;
     }
 
     public Page<ProductResponse> findAll(Pageable pageable) {
         return productRepository.findAll(pageable)
-                .map(this::toResponse);
+                .map(this::mapToResponse);
     }
 
     public ProductResponse findById(Long id) {
-        return toResponse(getEntity(id));
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
+        return mapToResponse(product);
     }
 
+    @Transactional
+    public ProductResponse create(ProductRequest request) {
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new RuntimeException("Category not found with id: " + request.getCategoryId()));
+
+        Product product = new Product();
+        product.setTitle(request.getName()); // getTitle() əvəzinə getName()
+        product.setPrice(request.getPrice());
+        product.setCategory(category);
+
+        Product savedProduct = productRepository.save(product);
+        return mapToResponse(savedProduct);
+    }
+
+    @Transactional
     public ProductResponse update(Long id, ProductRequest request) {
-        Product product = getEntity(id);
-        applyRequest(product, request);
-        return toResponse(productRepository.save(product));
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
+
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new RuntimeException("Category not found with id: " + request.getCategoryId()));
+
+        product.setTitle(request.getName()); // getTitle() əvəzinə getName()
+        product.setPrice(request.getPrice());
+        product.setCategory(category);
+
+        Product updatedProduct = productRepository.save(product);
+        return mapToResponse(updatedProduct);
     }
 
+    @Transactional
     public void delete(Long id) {
-        Product product = getEntity(id);
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
         productRepository.delete(product);
     }
 
-    private Product getEntity(Long id) {
-        return productRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Product not found"));
-    }
-
-    private void applyRequest(Product product, ProductRequest request) {
-        // getCategoryById ƏVƏZİNƏ getEntity istifadə edin:
-        Category category = categoryService.getEntity(request.getCategoryId());
-        product.setName(request.getName());
-        product.setPrice(request.getPrice().doubleValue());
-        product.setCategory(category);
-    }
-
-    private ProductResponse toResponse(Product product) {
-        Category category = product.getCategory();
-        Long categoryId = category != null ? category.getId() : null;
-        String categoryName = category != null ? category.getName() : null;
-        return new ProductResponse(product.getId(), product.getName(), product.getPrice(), categoryId, categoryName);
+    private ProductResponse mapToResponse(Product product) {
+        ProductResponse response = new ProductResponse();
+        response.setId(product.getId());
+        response.setName(product.getTitle());
+        response.setPrice(product.getPrice());
+        if (product.getCategory() != null) {
+            response.setCategoryId(product.getCategory().getId());
+        }
+        return response;
     }
 }

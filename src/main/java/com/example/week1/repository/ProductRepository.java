@@ -1,10 +1,14 @@
 package com.example.week1.repository;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
 import com.example.week1.entity.Product;
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.List;
 
-@Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
+
+    List<Product> findByCategoryId(Long categoryId);
+
+    boolean existsByTitle(String title);
+
+    boolean existsByTitleAndIdNot(String title, Long id);
 }

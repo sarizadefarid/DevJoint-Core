@@ -1,0 +1,25 @@
+
+CREATE TABLE IF NOT EXISTS category (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS product (
+    id BIGSERIAL PRIMARY KEY,
+    title VARCHAR(100) NOT NULL,
+    price NUMERIC(10, 2) NOT NULL,
+    category_id BIGINT REFERENCES category(id) ON DELETE SET NULL
+);
+
+
+CREATE TABLE IF NOT EXISTS orders (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS order_product (
+    order_id BIGINT REFERENCES orders(id) ON DELETE CASCADE,
+    product_id BIGINT REFERENCES product(id) ON DELETE CASCADE,
+    quantity INT DEFAULT 1,
+    PRIMARY KEY (order_id, product_id)
+);

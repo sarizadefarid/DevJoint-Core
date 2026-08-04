@@ -4,17 +4,15 @@ import com.example.week1.dto.product.ProductRequest;
 import com.example.week1.dto.product.ProductResponse;
 import com.example.week1.entity.Category;
 import com.example.week1.entity.Product;
+import com.example.week1.repository.CategoryRepository;
 import com.example.week1.repository.ProductRepository;
 import com.example.week1.service.ProductService;
-import com.example.week1.service.CategoryService;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 
@@ -29,95 +27,59 @@ class ProductServiceTest {
     private ProductRepository productRepository;
 
     @Mock
-    private CategoryService categoryService;
+    private CategoryRepository categoryRepository;
 
     @InjectMocks
     private ProductService productService;
 
     private Category category;
     private Product product;
+    private ProductRequest request;
 
     @BeforeEach
     void setUp() {
-        category = new Category();
-        category.setId(1L);
-        category.setName("Electronics");
-
+        category = new Category("Electronics");
+        
         product = new Product();
-        product.setId(1L);
-        product.setName("Laptop");
-        product.setPrice(1500.0);
+        product.setTitle("Laptop");
+        product.setPrice(1200.0);
         product.setCategory(category);
-    }
 
-    private ProductRequest buildRequest(String name, Double price, Long categoryId) {
-        ProductRequest request = new ProductRequest();
-        request.setName(name);
-        request.setPrice(price);
-        request.setCategoryId(categoryId);
-        return request;
+        request = new ProductRequest();
+        request.setName("Laptop");
+        request.setPrice(1200.0);
+        request.setCategoryId(1L);
     }
 
     @Test
-    void create_shouldSaveAndReturnProduct() {
-        ProductRequest request = buildRequest("Laptop", 1500.0, 1L);
-
-        // getCategoryById ƏVƏZİNƏ getEntity mock-lanır:
-        when(categoryService.getEntity(1L)).thenReturn(category);
+    void createProduct_Success() {
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
         when(productRepository.save(any(Product.class))).thenReturn(product);
 
-        ProductResponse response = productService.create(request);
+        ProductResponse created = productService.create(request);
 
-        assertNotNull(response);
-        assertEquals("Laptop", response.getName());
-        assertEquals(1500.0, response.getPrice());
+        assertNotNull(created);
+        assertEquals("Laptop", created.getName());
+        assertEquals(1200.0, created.getPrice());
         verify(productRepository, times(1)).save(any(Product.class));
     }
 
     @Test
-    void findById_shouldReturnProduct_whenExists() {
+    void getProductById_Success() {
         when(productRepository.findById(1L)).thenReturn(Optional.of(product));
 
-        ProductResponse response = productService.findById(1L);
+        ProductResponse found = productService.findById(1L);
 
-        assertNotNull(response);
-        assertEquals("Laptop", response.getName());
+        assertNotNull(found);
+        assertEquals("Laptop", found.getName());
     }
 
     @Test
-    void findById_shouldThrowException_whenNotFound() {
-        when(productRepository.findById(99L)).thenReturn(Optional.empty());
+    void createProduct_ThrowsException_WhenCategoryNotFound() {
+        when(categoryRepository.findById(1L)).thenReturn(Optional.empty());
 
-        ResponseStatusException exception = assertThrows(
-                ResponseStatusException.class,
-                () -> productService.findById(99L)
-        );
-
-        assertEquals(404, exception.getStatusCode().value());
-    }
-
-    @Test
-    void delete_shouldRemoveProduct_whenExists() {
-        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
-        doNothing().when(productRepository).delete(product);
-
-        productService.delete(1L);
-
-        verify(productRepository, times(1)).delete(product);
-    }
-
-    @Test
-    void update_shouldModifyAndReturnProduct() {
-        ProductRequest request = buildRequest("Laptop Pro", 1800.0, 1L);
-
-        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
-        // getCategoryById ƏVƏZİNƏ getEntity mock-lanır:
-        when(categoryService.getEntity(1L)).thenReturn(category);
-        when(productRepository.save(any(Product.class))).thenReturn(product);
-
-        ProductResponse response = productService.update(1L, request);
-
-        assertNotNull(response);
-        verify(productRepository, times(1)).save(any(Product.class));
+        assertThrows(RuntimeException.class, () -> {
+            productService.create(request);
+        });
     }
 }

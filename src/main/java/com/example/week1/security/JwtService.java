@@ -33,7 +33,7 @@ public class JwtService {
         return claimsResolver.apply(claims);
     }
 
-    // 1. String username qəbul edən metodu (AuthService-dəki user.getUsername() üçün)
+    
     public String generateToken(String username) {
         return Jwts.builder()
                 .setSubject(username)
@@ -43,7 +43,7 @@ public class JwtService {
                 .compact();
     }
 
-    // 2. UserDetails qəbul edən metodu
+    
     public String generateToken(UserDetails userDetails) {
         return generateToken(new HashMap<>(), userDetails);
     }
@@ -58,7 +58,7 @@ public class JwtService {
                 .compact();
     }
 
-    // Expiration (Müddət) yoxlanışı
+    
     public boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
