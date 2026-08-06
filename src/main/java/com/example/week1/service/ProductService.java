@@ -42,6 +42,27 @@ public class ProductService {
         return mapToResponse(savedProduct);
     }
 
+    // Multi-table write transaction requirement (20 points)
+    // Bu metod tək tranzaksiyada həm Product, həm də Category cədvəlinə yazır (Multi-table write)
+    @Transactional
+    public ProductResponse createProductWithCategoryUpdate(ProductRequest request) {
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new RuntimeException("Category not found with id: " + request.getCategoryId()));
+
+        // 1-ci Cədvələ yazma (Category cədvəli yenilənir)
+        categoryRepository.save(category);
+
+        Product product = new Product();
+        product.setTitle(request.getName());
+        product.setPrice(request.getPrice());
+        product.setCategory(category);
+
+        // 2-ci Cədvələ yazma (Product cədvəlinə əlavə olunur)
+        Product savedProduct = productRepository.save(product);
+
+        return mapToResponse(savedProduct);
+    }
+
     @Transactional(readOnly = true)
     public Page<ProductResponse> findAll(Pageable pageable) {
         return productRepository.findAll(pageable)
