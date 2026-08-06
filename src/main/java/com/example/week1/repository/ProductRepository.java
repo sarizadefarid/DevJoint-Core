@@ -1,6 +1,7 @@
 package com.example.week1.repository;
 
 import com.example.week1.entity.Product;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -11,7 +12,6 @@ import java.util.List;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpecificationExecutor<Product> {
-
 
         List<Product> findByTitleContainingIgnoreCaseAndPriceBetween(String title, Double minPrice, Double maxPrice);
 
@@ -25,4 +25,11 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
         List<Product> filterProductsNative(@Param("minPrice") Double minPrice,
                         @Param("maxPrice") Double maxPrice,
                         @Param("catId") Long catId);
+
+        @Query("SELECT p FROM Product p JOIN FETCH p.category")
+        List<Product> findAllWithCategoryJoinFetch();
+
+        @EntityGraph(attributePaths = { "category" })
+        @Query("SELECT p FROM Product p")
+        List<Product> findAllWithCategoryEntityGraph();
 }

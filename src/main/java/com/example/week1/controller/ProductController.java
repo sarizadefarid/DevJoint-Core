@@ -71,4 +71,16 @@ public class ProductController {
             @RequestParam(required = false) Long categoryId) {
         return productService.getDynamicProducts(title, minPrice, maxPrice, categoryId);
     }
+
+    // N+1 Query Fix 1: JOIN FETCH endpoint
+    @GetMapping("/with-category-fetch")
+    public List<ProductResponse> findAllWithCategoryFetch() {
+        return productService.findAllWithCategoryFetch();
+    }
+
+    // N+1 Query Fix 2: @EntityGraph endpoint
+    @GetMapping("/with-category-graph")
+    public List<ProductResponse> findAllWithCategoryEntityGraph() {
+        return productService.findAllWithCategoryEntityGraph();
+    }
 }
