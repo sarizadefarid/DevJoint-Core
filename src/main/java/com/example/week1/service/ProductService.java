@@ -11,6 +11,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 public class ProductService {
 
@@ -22,29 +25,31 @@ public class ProductService {
         this.categoryRepository = categoryRepository;
     }
 
-    public Page<ProductResponse> findAll(Pageable pageable) {
-        return productRepository.findAll(pageable)
-                .map(this::mapToResponse);
-    }
-
-    public ProductResponse findById(Long id) {
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
-        return mapToResponse(product);
-    }
-
     @Transactional
     public ProductResponse create(ProductRequest request) {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Category not found with id: " + request.getCategoryId()));
 
         Product product = new Product();
-        product.setTitle(request.getName()); // getTitle() əvəzinə getName()
+        product.setTitle(request.getName());
         product.setPrice(request.getPrice());
         product.setCategory(category);
 
         Product savedProduct = productRepository.save(product);
         return mapToResponse(savedProduct);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProductResponse> findAll(Pageable pageable) {
+        return productRepository.findAll(pageable)
+                .map(this::mapToResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public ProductResponse findById(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
+        return mapToResponse(product);
     }
 
     @Transactional
@@ -55,7 +60,7 @@ public class ProductService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Category not found with id: " + request.getCategoryId()));
 
-        product.setTitle(request.getName()); // getTitle() əvəzinə getName()
+        product.setTitle(request.getName());
         product.setPrice(request.getPrice());
         product.setCategory(category);
 
@@ -65,9 +70,27 @@ public class ProductService {
 
     @Transactional
     public void delete(Long id) {
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
-        productRepository.delete(product);
+        if (!productRepository.existsById(id)) {
+            throw new RuntimeException("Product not found with id: " + id);
+        }
+        productRepository.deleteById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductResponse> searchProducts(String name, Double minPrice, Double maxPrice) {
+        // findByName... əvəzinə findByTitle... çağırılır:
+        return productRepository.findByTitleContainingIgnoreCaseAndPriceBetween(name, minPrice, maxPrice)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductResponse> filterByCategoryAndPrice(String categoryName, Double maxPrice) {
+        return productRepository.filterByCategoryNameAndMaxPrice(categoryName, maxPrice)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 
     private ProductResponse mapToResponse(Product product) {
@@ -77,6 +100,7 @@ public class ProductService {
         response.setPrice(product.getPrice());
         if (product.getCategory() != null) {
             response.setCategoryId(product.getCategory().getId());
+            response.setCategoryName(product.getCategory().getName());
         }
         return response;
     }

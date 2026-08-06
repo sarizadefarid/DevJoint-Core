@@ -26,7 +26,6 @@ public class SecurityConfig {
         private final JwtAuthenticationFilter jwtAuthFilter;
         private final CustomAuthenticationEntryPoint authEntryPoint;
         private final CustomAccessDeniedHandler accessDeniedHandler;
-
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
                 http
@@ -34,6 +33,7 @@ public class SecurityConfig {
                                 .cors(AbstractHttpConfigurer::disable)
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers("/api/v1/auth/**").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
                                                 .requestMatchers(
                                                                 "/v3/api-docs/**",
                                                                 "/swagger-ui/**",
@@ -45,9 +45,8 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/v1/user/**").hasAnyRole("USER", "ADMIN")
                                                 .anyRequest().authenticated())
                                 .exceptionHandling(exception -> exception
-                                                .authenticationEntryPoint(authEntryPoint) // 401 üçün
-                                                .accessDeniedHandler(accessDeniedHandler) // 403 üçün
-                                )
+                                                .authenticationEntryPoint(authEntryPoint)
+                                                .accessDeniedHandler(accessDeniedHandler))
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

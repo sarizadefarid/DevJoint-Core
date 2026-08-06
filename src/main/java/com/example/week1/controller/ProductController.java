@@ -4,10 +4,10 @@ import com.example.week1.dto.product.ProductRequest;
 import com.example.week1.dto.product.ProductResponse;
 import com.example.week1.service.ProductService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -46,5 +46,20 @@ public class ProductController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         productService.delete(id);
+    }
+
+    @GetMapping("/search")
+    public List<ProductResponse> searchProducts(
+            @RequestParam(required = false, defaultValue = "") String name,
+            @RequestParam(required = false, defaultValue = "0") Double minPrice,
+            @RequestParam(required = false, defaultValue = "999999") Double maxPrice) {
+        return productService.searchProducts(name, minPrice, maxPrice);
+    }
+
+    @GetMapping("/filter")
+    public List<ProductResponse> filterByCategory(
+            @RequestParam String categoryName,
+            @RequestParam Double maxPrice) {
+        return productService.filterByCategoryAndPrice(categoryName, maxPrice);
     }
 }
