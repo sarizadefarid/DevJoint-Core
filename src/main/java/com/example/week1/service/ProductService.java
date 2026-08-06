@@ -6,11 +6,14 @@ import com.example.week1.entity.Category;
 import com.example.week1.entity.Product;
 import com.example.week1.repository.CategoryRepository;
 import com.example.week1.repository.ProductRepository;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -78,7 +81,6 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public List<ProductResponse> searchProducts(String name, Double minPrice, Double maxPrice) {
-        // findByName... əvəzinə findByTitle... çağırılır:
         return productRepository.findByTitleContainingIgnoreCaseAndPriceBetween(name, minPrice, maxPrice)
                 .stream()
                 .map(this::mapToResponse)
@@ -88,6 +90,39 @@ public class ProductService {
     @Transactional(readOnly = true)
     public List<ProductResponse> filterByCategoryAndPrice(String categoryName, Double maxPrice) {
         return productRepository.filterByCategoryNameAndMaxPrice(categoryName, maxPrice)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    // Dynamic search / filtering using Specification API
+    @Transactional(readOnly = true)
+    public List<ProductResponse> getDynamicProducts(String title, Double minPrice, Double maxPrice, Long categoryId) {
+        Specification<Product> spec = (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (title != null && !title.trim().isEmpty()) {
+                predicates.add(criteriaBuilder.like(
+                        criteriaBuilder.lower(root.get("title")), "%" + title.toLowerCase() + "%"
+                ));
+            }
+
+            if (minPrice != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("price"), minPrice));
+            }
+
+            if (maxPrice != null) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("price"), maxPrice));
+            }
+
+            if (categoryId != null) {
+                predicates.add(criteriaBuilder.equal(root.get("category").get("id"), categoryId));
+            }
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return productRepository.findAll(spec)
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());

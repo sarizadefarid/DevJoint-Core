@@ -62,4 +62,13 @@ public class ProductController {
             @RequestParam Double maxPrice) {
         return productService.filterByCategoryAndPrice(categoryName, maxPrice);
     }
+
+    @GetMapping("/dynamic-search")
+    public List<ProductResponse> dynamicSearch(
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) Double minPrice,
+            @RequestParam(required = false) Double maxPrice,
+            @RequestParam(required = false) Long categoryId) {
+        return productService.getDynamicProducts(title, minPrice, maxPrice, categoryId);
+    }
 }
